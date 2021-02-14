@@ -12,21 +12,10 @@ type Container struct {
 }
 
 type containerUtil struct {
-	FaultField *FaultField
+	FaultField FaultField
 }
 
 var _ json.Unmarshaler = &Container{}
-var _ json.Marshaler = &Container{}
-
-func (c *Container) MarshalJSON() ([]byte, error) {
-	// Serialize the utility class
-	temp := containerUtil{
-		FaultField: &FaultField{
-			Fault: c.FaultField,
-		},
-	}
-	return json.Marshal(temp)
-}
 
 func (c *Container) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class

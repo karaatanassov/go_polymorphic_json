@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"testing"
 
 	"gitlab.eng.vmware.com/kkaraatanassov/go-json/interfaces"
@@ -45,8 +46,8 @@ func TestNotFound(t *testing.T) {
 	validateNotFound(fault, t)
 }
 
-func serializeDeserialize(s interfaces.JSONSerializable, t *testing.T) (interfaces.Fault, error) {
-	b, err := s.SerializeJSON()
+func serializeDeserialize(s interface{}, t *testing.T) (interfaces.Fault, error) {
+	b, err := json.Marshal(s)
 	if err != nil {
 		t.Error("Serialization failed", err)
 		return nil, err

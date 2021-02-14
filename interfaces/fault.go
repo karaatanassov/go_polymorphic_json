@@ -1,9 +1,10 @@
 package interfaces
 
 // Fault represents a base error
-// To be generated
+// This should be generated code. It is possible to emit it in the models
+// package and creative name will be needed e.g. NotFoundInterface.
+// The interface package approach seems cleaner.
 type Fault interface {
-	JSONSerializable
 	GetMessage() string
 	SetMessage(string)
 }

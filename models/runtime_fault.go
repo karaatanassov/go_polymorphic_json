@@ -13,15 +13,15 @@ type RuntimeFault struct {
 
 var _ interfaces.Fault = &RuntimeFault{}
 var _ interfaces.RuntimeFault = &RuntimeFault{}
-var _ interfaces.JSONSerializable = &RuntimeFault{}
+var _ json.Marshaler = &RuntimeFault{}
 
-// SerializeJSON writes a RuntimeFaultObject as JSON
-func (rf *RuntimeFault) SerializeJSON() ([]byte, error) {
+// MarshalJSON writes a RuntimeFaultObject as JSON
+func (rf *RuntimeFault) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		*RuntimeFault
-		Kind string
+		Message string
+		Kind    string
 	}{
-		RuntimeFault: rf,
-		Kind:         "RuntimeFault",
+		Message: rf.Message,
+		Kind:    "RuntimeFault",
 	})
 }

@@ -20,7 +20,8 @@ type Fault struct {
 }
 
 var _ interfaces.Fault = &Fault{}
-var _ interfaces.JSONSerializable = &Fault{}
+
+var _ json.Marshaler = &Fault{}
 
 // GetMessage retrieves the message value
 func (fault *Fault) GetMessage() string {
@@ -32,18 +33,21 @@ func (fault *Fault) SetMessage(message string) {
 	fault.Message = message
 }
 
-// SerializeJSON writes Fault as JSON and adds discriminator
-func (fault *Fault) SerializeJSON() ([]byte, error) {
-	// The approach below passes the Fault ot the encoding/json code.
-	// Thus this cannot be implemented in json.Marshaler.MashalJSON.
-	// One alternative could be to copy the full object into a temporary object
-	// with discriminator
+// MarshalJSON writes Fault as JSON and adds discriminator
+func (fault *Fault) MarshalJSON() ([]byte, error) {
+	// The approach below copies the full object into a temporary object
+	// with discriminator and passes it to the go json mashaler.
+	// An alternative is to create small utility object that holds the
+	// discriminator and anonymous Fault pointer. This requires the
+	// serialization to be in custom interface and additional copy logic in
+	// higher level bindings. The current approach preserves the go abstractions
+	// and simplifies higher level bindings.
 	return json.Marshal(struct {
-		*Fault
-		Kind string
+		Message *string
+		Kind    string
 	}{
-		Fault: fault,
-		Kind:  "Fault",
+		Message: &fault.Message,
+		Kind:    "Fault",
 	})
 }
 
@@ -76,37 +80,26 @@ func DeserializeFault(in []byte) (interfaces.Fault, error) {
 
 // FaultField is utility class that helps the go JSON deserializer to invoke the
 // proper de-serialization logic for Fault fields while preserving the
-// polymorphic nature of the type. In bindings we need two types - one with *Field
-// and one for the actual object. UnmarshalJSON() reads into the the type with
-// *Field fields and then copies the data. See field_test.go
+// polymorphic nature of the type. go uses reflection to invoke the proper
+// de-serialization method. As interface do not have methods implementations
+// we need a concrete class field that will have the logic to deserialize the
+// proper interface implementation.
+// In bindings deserialization we need two types - one with *Field
+// and one for the interface type. UnmarshalJSON() reads into the the * Field
+// type and then copies the data to the type with interface type.
+// See field_test.go
 type FaultField struct {
 	interfaces.Fault
 }
 
 var _ interfaces.Fault = &FaultField{}
-var _ json.Marshaler = &FaultField{}
 var _ json.Unmarshaler = &FaultField{}
-
-// MarshalJSON Writes the embedded Fault with discriminator
-func (ff *FaultField) MarshalJSON() ([]byte, error) {
-	return ff.Fault.SerializeJSON()
-}
 
 // UnmarshalJSON reads the embedded fault taking care of the discriminator
 func (ff *FaultField) UnmarshalJSON(in []byte) error {
 	var err error
 	ff.Fault, err = DeserializeFault(in)
 	return err
-}
-
-// ToFaultFieldArray is utlity to convert binding faults to serialization
-// utility faults
-func ToFaultFieldArray(faults []interfaces.Fault) []FaultField {
-	var items []FaultField
-	for _, tmp := range faults {
-		items = append(items, FaultField{Fault: tmp})
-	}
-	return items
 }
 
 // ToFaultsArray is utlity to convert FaultField Array to interfaces.Fault array

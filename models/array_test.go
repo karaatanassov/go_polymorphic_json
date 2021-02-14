@@ -16,15 +16,6 @@ type arrayContainerUtil struct {
 }
 
 var _ json.Unmarshaler = &ArrayContainer{}
-var _ json.Marshaler = &ArrayContainer{}
-
-func (c *ArrayContainer) MarshalJSON() ([]byte, error) {
-	// Serialize the utility class
-	temp := arrayContainerUtil{
-		Faults: ToFaultFieldArray(c.Faults),
-	}
-	return json.Marshal(temp)
-}
 
 func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class

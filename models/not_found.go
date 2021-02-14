@@ -16,7 +16,7 @@ type NotFound struct {
 var _ interfaces.NotFound = &NotFound{}
 var _ interfaces.RuntimeFault = &NotFound{}
 var _ interfaces.Fault = &NotFound{}
-var _ interfaces.JSONSerializable = &NotFound{}
+var _ json.Marshaler = &NotFound{}
 
 // GetObjKind retrieves the object kind of obj identifier
 func (nfo *NotFound) GetObjKind() string {
@@ -38,13 +38,17 @@ func (nfo *NotFound) SetObj(obj string) {
 	nfo.Obj = obj
 }
 
-// SerializeJSON writes a NotFoundObject as JSON
-func (nfo *NotFound) SerializeJSON() ([]byte, error) {
+// MarshalJSON writes a NotFoundObject as JSON
+func (nfo *NotFound) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		*NotFound
-		Kind string
+		Message *string
+		ObjKind *string
+		Obj     *string
+		Kind    string
 	}{
-		NotFound: nfo,
-		Kind:     "NotFound",
+		Message: &nfo.Message,
+		ObjKind: &nfo.ObjKind,
+		Obj:     &nfo.Obj,
+		Kind:    "NotFound",
 	})
 }
