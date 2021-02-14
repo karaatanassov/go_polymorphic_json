@@ -7,4 +7,6 @@ package interfaces
 type Fault interface {
 	GetMessage() string
 	SetMessage(string)
+	GetCause() Fault
+	SetCause(Fault)
 }

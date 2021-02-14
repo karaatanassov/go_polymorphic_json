@@ -17,11 +17,12 @@ import (
 // and the JSONSerializable
 type Fault struct {
 	Message string
+	Cause   interfaces.Fault
 }
 
 var _ interfaces.Fault = &Fault{}
-
 var _ json.Marshaler = &Fault{}
+var _ json.Unmarshaler = &Fault{}
 
 // GetMessage retrieves the message value
 func (fault *Fault) GetMessage() string {
@@ -31,6 +32,31 @@ func (fault *Fault) GetMessage() string {
 // SetMessage updates the message value
 func (fault *Fault) SetMessage(message string) {
 	fault.Message = message
+}
+
+// GetCause returns the case of fault
+func (fault *Fault) GetCause() interfaces.Fault {
+	return fault.Cause
+}
+
+// SetCause sets the cause of the fault
+func (fault *Fault) SetCause(cause interfaces.Fault) {
+	fault.Cause = cause
+}
+
+// UnmarshalJSON reads a fault from JSON
+func (fault *Fault) UnmarshalJSON(in []byte) error {
+	pxy := &struct {
+		Message string
+		Cause   FaultField
+	}{}
+	err := json.Unmarshal(in, pxy)
+	if err != nil {
+		return err
+	}
+	fault.Message = pxy.Message
+	fault.Cause = pxy.Cause.Fault
+	return nil
 }
 
 // MarshalJSON writes Fault as JSON and adds discriminator
@@ -43,10 +69,12 @@ func (fault *Fault) MarshalJSON() ([]byte, error) {
 	// higher level bindings. The current approach preserves the go abstractions
 	// and simplifies higher level bindings.
 	return json.Marshal(struct {
-		Message *string
+		Message string
+		Cause   interfaces.Fault
 		Kind    string
 	}{
-		Message: &fault.Message,
+		Message: fault.Message,
+		Cause:   fault.Cause,
 		Kind:    "Fault",
 	})
 }
@@ -55,12 +83,16 @@ func (fault *Fault) MarshalJSON() ([]byte, error) {
 // based on the Kind field. It deserializes the value twice. First scan for
 // discriminator and then deserializes into the proper type.
 func DeserializeFault(in []byte) (interfaces.Fault, error) {
-	d := struct {
+	d := &struct {
 		Kind string
 	}{}
+	// Double pointer detects null values
 	err := json.Unmarshal(in, &d)
 	if err != nil {
 		return nil, err
+	}
+	if d == nil {
+		return nil, nil
 	}
 	kind := d.Kind
 

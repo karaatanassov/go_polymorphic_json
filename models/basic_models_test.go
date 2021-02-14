@@ -7,8 +7,17 @@ import (
 	"gitlab.eng.vmware.com/kkaraatanassov/go-json/interfaces"
 )
 
+var innerFault = Fault{
+	Message: "inner message",
+}
+
+var innerRuntimeFault = RuntimeFault{
+	Fault: innerFault,
+}
+
 var fault Fault = Fault{
 	Message: "test message",
+	Cause:   &innerRuntimeFault,
 }
 var runtimeFault RuntimeFault = RuntimeFault{
 	Fault: fault,
@@ -69,6 +78,7 @@ func validateFault(fault interfaces.Fault, t *testing.T) {
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
+		validateCause(v.Cause, t)
 	default:
 		t.Error("Unexpected type")
 	}
@@ -80,6 +90,7 @@ func validateRuntimeFault(fault interfaces.Fault, t *testing.T) {
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
+		validateCause(v.Cause, t)
 	default:
 		t.Error("Unexpected type")
 	}
@@ -97,8 +108,24 @@ func validateNotFound(fault interfaces.Fault, t *testing.T) {
 		if notFound.GetObj() != "vm-42" {
 			t.Error("Unexpected obj:", notFound.GetObj())
 		}
+		validateCause(notFound.GetCause(), t)
 	} else {
 		t.Error("Unexpected type", fault)
 
+	}
+}
+
+func validateCause(cause interfaces.Fault, t *testing.T) {
+	if cause == nil {
+		t.Error("Missing cause")
+	} else {
+		switch i := cause.(type) {
+		case *RuntimeFault:
+			if i.Message != "inner message" {
+				t.Error("Inner message is wrong:", i.Message)
+			}
+		default:
+			t.Error("Unexpected inner type", cause)
+		}
 	}
 }
