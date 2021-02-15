@@ -24,6 +24,13 @@ var _ interfaces.Fault = &Fault{}
 var _ json.Marshaler = &Fault{}
 var _ json.Unmarshaler = &Fault{}
 
+// This is undesirable. However go lang cannot restrict assignments of base
+// instance to descendant if there are no structural differences
+var _ interfaces.RuntimeFault = &Fault{}
+
+// This assignment is not allowed
+//var _ interfaces.NotFound = &Fault{}
+
 // GetMessage retrieves the message value
 func (fault *Fault) GetMessage() string {
 	return fault.Message
@@ -61,6 +68,7 @@ func (fault *Fault) UnmarshalJSON(in []byte) error {
 
 // MarshalJSON writes Fault as JSON and adds discriminator
 func (fault *Fault) MarshalJSON() ([]byte, error) {
+	type marshalable Fault
 	// The approach below copies the full object into a temporary object
 	// with discriminator and passes it to the go json mashaler.
 	// An alternative is to create small utility object that holds the
@@ -69,13 +77,11 @@ func (fault *Fault) MarshalJSON() ([]byte, error) {
 	// higher level bindings. The current approach preserves the go abstractions
 	// and simplifies higher level bindings.
 	return json.Marshal(struct {
-		Message string
-		Cause   interfaces.Fault
-		Kind    string
+		marshalable
+		Kind string
 	}{
-		Message: fault.Message,
-		Cause:   fault.Cause,
-		Kind:    "Fault",
+		marshalable: marshalable(*fault),
+		Kind:        "Fault",
 	})
 }
 
