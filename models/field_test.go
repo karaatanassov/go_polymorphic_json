@@ -11,15 +11,13 @@ type Container struct {
 	FaultField interfaces.Fault
 }
 
-type containerUtil struct {
-	FaultField FaultField
-}
-
 var _ json.Unmarshaler = &Container{}
 
 func (c *Container) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class
-	temp := containerUtil{}
+	temp := struct {
+		FaultField FaultField
+	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
@@ -30,7 +28,7 @@ func (c *Container) UnmarshalJSON(in []byte) error {
 }
 
 var container = Container{
-	FaultField: &notFound,
+	FaultField: notFound,
 }
 
 func TestContainerField(t *testing.T) {

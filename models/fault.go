@@ -24,9 +24,8 @@ var _ interfaces.Fault = &Fault{}
 var _ json.Marshaler = &Fault{}
 var _ json.Unmarshaler = &Fault{}
 
-// This is undesirable. However go lang cannot restrict assignments of base
-// instance to descendant if there are no structural differences
-var _ interfaces.RuntimeFault = &Fault{}
+// This assignment is not allowed with ZzRuntimeFault
+//var _ interfaces.RuntimeFault = &Fault{}
 
 // This assignment is not allowed
 //var _ interfaces.NotFound = &Fault{}
@@ -77,18 +76,18 @@ func (fault *Fault) MarshalJSON() ([]byte, error) {
 	// higher level bindings. The current approach preserves the go abstractions
 	// and simplifies higher level bindings.
 	return json.Marshal(struct {
-		marshalable
 		Kind string
+		marshalable
 	}{
-		marshalable: marshalable(*fault),
 		Kind:        "Fault",
+		marshalable: marshalable(*fault),
 	})
 }
 
-// DeserializeFault reads a fault from JSON and instantiates the proper type
+// UnmarshalFault reads a fault from JSON and instantiates the proper type
 // based on the Kind field. It deserializes the value twice. First scan for
 // discriminator and then deserializes into the proper type.
-func DeserializeFault(in []byte) (interfaces.Fault, error) {
+func UnmarshalFault(in []byte) (interfaces.Fault, error) {
 	d := &struct {
 		Kind string
 	}{}
@@ -136,7 +135,7 @@ var _ json.Unmarshaler = &FaultField{}
 // UnmarshalJSON reads the embedded fault taking care of the discriminator
 func (ff *FaultField) UnmarshalJSON(in []byte) error {
 	var err error
-	ff.Fault, err = DeserializeFault(in)
+	ff.Fault, err = UnmarshalFault(in)
 	return err
 }
 

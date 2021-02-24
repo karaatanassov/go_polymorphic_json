@@ -15,21 +15,21 @@ var innerRuntimeFault = RuntimeFault{
 	Fault: innerFault,
 }
 
-var fault Fault = Fault{
+var fault *Fault = &Fault{
 	Message: "test message",
 	Cause:   &innerRuntimeFault,
 }
-var runtimeFault RuntimeFault = RuntimeFault{
-	Fault: fault,
+var runtimeFault *RuntimeFault = &RuntimeFault{
+	Fault: *fault,
 }
-var notFound NotFound = NotFound{
-	RuntimeFault: runtimeFault,
+var notFound *NotFound = &NotFound{
+	RuntimeFault: *runtimeFault,
 	ObjKind:      "VirtualMachine",
 	Obj:          "vm-42",
 }
 
 func TestFault(t *testing.T) {
-	fault, err := serializeDeserialize(&fault, t)
+	fault, err := serializeDeserialize(fault, t)
 	if err != nil {
 		t.Error("Fault basic test failed", err)
 		return
@@ -38,7 +38,7 @@ func TestFault(t *testing.T) {
 }
 
 func TestRuntimeFault(t *testing.T) {
-	fault, err := serializeDeserialize(&runtimeFault, t)
+	fault, err := serializeDeserialize(runtimeFault, t)
 	if err != nil {
 		t.Error("RuntimeFault basic test failed", err)
 		return
@@ -47,12 +47,45 @@ func TestRuntimeFault(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	fault, err := serializeDeserialize(&notFound, t)
+	fault, err := serializeDeserialize(notFound, t)
 	if err != nil {
 		t.Error("NotFound basic test failed", err)
 		return
 	}
 	validateNotFound(fault, t)
+}
+
+func TestInvalidRuntimeFault(t *testing.T) {
+	b, err := json.Marshal(fault)
+	if err != nil {
+		t.Error("Serialization failed", err)
+		return
+	}
+
+	t.Log("JSON Bytes", string(b))
+
+	_, err = UnmarshalRuntimeFault(b)
+	if err == nil {
+		t.Error("Expected to fail unmarshaling fault into RuntimeFault")
+	}
+}
+
+func TestValidRuntimeFault(t *testing.T) {
+	b, err := json.Marshal(notFound)
+	if err != nil {
+		t.Error("Serialization failed", err)
+		return
+	}
+
+	t.Log("JSON Bytes", string(b))
+
+	rtf, err := UnmarshalRuntimeFault(b)
+	if err != nil {
+		t.Error("Expected to unmarshal RuntimeFault.", err)
+	}
+	// Note that the validate method accepts interfaces.Fault and works well with
+	// interfaces.RuntimeFault which holds NotFound
+	validateNotFound(rtf, t)
 }
 
 func serializeDeserialize(s interface{}, t *testing.T) (interfaces.Fault, error) {
@@ -64,7 +97,7 @@ func serializeDeserialize(s interface{}, t *testing.T) (interfaces.Fault, error)
 
 	t.Log("JSON Bytes", string(b))
 
-	fault, err := DeserializeFault(b)
+	fault, err := UnmarshalFault(b)
 	if err != nil {
 		t.Error("Cannot deserialize fault", err)
 		return nil, err

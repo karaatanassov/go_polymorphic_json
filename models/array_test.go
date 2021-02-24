@@ -11,15 +11,13 @@ type ArrayContainer struct {
 	Faults []interfaces.Fault
 }
 
-type arrayContainerUtil struct {
-	Faults []FaultField
-}
-
 var _ json.Unmarshaler = &ArrayContainer{}
 
 func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class
-	temp := arrayContainerUtil{}
+	temp := struct {
+		Faults []FaultField
+	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
@@ -31,9 +29,9 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 
 var arrayContainer ArrayContainer = ArrayContainer{
 	Faults: []interfaces.Fault{
-		&fault,
-		&runtimeFault,
-		&notFound,
+		fault,
+		runtimeFault,
+		notFound,
 	},
 }
 

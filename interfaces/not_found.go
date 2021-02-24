@@ -8,4 +8,5 @@ type NotFound interface {
 	SetObjKind(string)
 	GetObj() string
 	SetObj(string)
+	ZzNotFound()
 }
