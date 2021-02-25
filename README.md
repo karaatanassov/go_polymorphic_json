@@ -125,12 +125,11 @@ func main() {
 In similar way an interface can be used as return type, member of another
 structure or element type of a slice.
 
-In addition to data model we would need to define interfaces for each of
-out type to have polymorphic behavior.
+In addition to data model we would need to define interfaces for each type to have polymorphic behavior.
 
 I prefer to keep things tidy and kept the models and their implementations in
-the `models` package. While the interface definitions reside in the `interface`
-package. Thus we get the following definitions
+the `models` package. While the interface definitions reside in the `interfaces`
+package. Thus we get the following definitions:
 
 ```go
 type Fault interface {
@@ -150,7 +149,7 @@ type NotFound interface {
 	SetObj(string)
 }
 ```
-Again note that our code is [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+The code is still [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
 There is no need to include members of generic abstractions into
 specialized ones. Instead Go provides us with embedding to reuse existing code.
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"gitlab.eng.vmware.com/kkaraatanassov/go-json/interfaces"
+	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
 type Container struct {

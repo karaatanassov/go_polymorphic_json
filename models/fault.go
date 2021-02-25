@@ -9,7 +9,7 @@ package models
 import (
 	"encoding/json"
 
-	"gitlab.eng.vmware.com/kkaraatanassov/go-json/interfaces"
+	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
 // Fault contains information about a base fault

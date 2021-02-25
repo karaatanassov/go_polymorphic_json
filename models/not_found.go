@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gitlab.eng.vmware.com/kkaraatanassov/go-json/interfaces"
+	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
 // NotFound contains the data about a not found error
