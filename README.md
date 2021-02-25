@@ -72,7 +72,7 @@ straightforward job:
 ```go
 type Fault struct {
 	Message string
-	Cause   interfaces.Fault
+	Cause   *Fault
 }
 type RuntimeFault struct {
 	Fault
@@ -396,7 +396,7 @@ func (rf *RuntimeFault) ZzRuntimeFault() {
 
 ### How is unmarshaling working in the hierarchy?
 
- `RuntimeFault` fields are polymorphic and are not root of a hierarchy. One option is to have `UnmarshalRuntimeFault` bank on the root objects like `Fault` and invoke `UnmarshalFault` function.  This will save code size as in a hug hierarchy the unmashal methods may become too big.
+ `RuntimeFault` fields are polymorphic and are not root of a hierarchy. One option is to have `UnmarshalRuntimeFault` bank on the root objects like `Fault` and invoke `UnmarshalFault` function.  This will save code size as in a large hierarchy the unmashal methods may become too big.
 
 ```go
  func UnmarshalRuntimeFault(in []byte) (interfaces.RuntimeFault, error) {
@@ -413,7 +413,7 @@ func (rf *RuntimeFault) ZzRuntimeFault() {
 
 ## Conclusion and next steps
 
-This article and sample code illustrate the basic handling of polymorphic JSON in Go. We see that out of the box support is lacking but a little bit of creativity helps us get near native experience with polymorphic unmarshaling in Go.
+This article and sample code illustrate the basic handling of polymorphic JSON in Go. We see that out of the box support is lacking. Yet a little bit of creativity helps us get near native experience with polymorphic unmarshaling in Go.
 
 The article and sample code leave out some details.
 
