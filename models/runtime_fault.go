@@ -18,14 +18,13 @@ var _ json.Unmarshaler = &RuntimeFault{}
 
 // MarshalJSON writes a RuntimeFaultObject as JSON
 func (rf *RuntimeFault) MarshalJSON() ([]byte, error) {
+	type marshalRuntimeFault RuntimeFault
 	return json.Marshal(struct {
-		Message string
-		Cause   interfaces.Fault
-		Kind    string
+		marshalRuntimeFault
+		Kind string
 	}{
-		Message: rf.Message,
-		Cause:   rf.Cause,
-		Kind:    "RuntimeFault",
+		marshalRuntimeFault: marshalRuntimeFault(*rf),
+		Kind:                "RuntimeFault",
 	})
 }
 

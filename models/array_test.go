@@ -29,7 +29,7 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	return nil
 }
 
-var arrayContainer ArrayContainer = ArrayContainer{
+var arrayContainer = ArrayContainer{
 	Faults: []interfaces.Fault{
 		&fault,
 		&runtimeFault,

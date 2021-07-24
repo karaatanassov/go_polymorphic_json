@@ -15,14 +15,14 @@ var innerRuntimeFault = RuntimeFault{
 	Fault: innerFault,
 }
 
-var fault Fault = Fault{
+var fault = Fault{
 	Message: "test message",
 	Cause:   &innerRuntimeFault,
 }
-var runtimeFault RuntimeFault = RuntimeFault{
+var runtimeFault = RuntimeFault{
 	Fault: fault,
 }
-var notFound NotFound = NotFound{
+var notFound = NotFound{
 	RuntimeFault: runtimeFault,
 	ObjKind:      "VirtualMachine",
 	Obj:          "vm-42",

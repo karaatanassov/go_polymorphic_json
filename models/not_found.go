@@ -41,18 +41,13 @@ func (nfo *NotFound) SetObj(obj string) {
 
 // MarshalJSON writes a NotFoundObject as JSON
 func (nfo *NotFound) MarshalJSON() ([]byte, error) {
+	type mashalNotFount NotFound
 	return json.Marshal(struct {
-		Message string
-		Cause   interfaces.Fault
-		ObjKind string
-		Obj     string
-		Kind    string
+		mashalNotFount
+		Kind string
 	}{
-		Message: nfo.Message,
-		Cause:   nfo.Cause,
-		ObjKind: nfo.ObjKind,
-		Obj:     nfo.Obj,
-		Kind:    "NotFound",
+		mashalNotFount: mashalNotFount(*nfo),
+		Kind:           "NotFound",
 	})
 }
 

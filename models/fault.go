@@ -61,21 +61,13 @@ func (fault *Fault) UnmarshalJSON(in []byte) error {
 
 // MarshalJSON writes Fault as JSON and adds discriminator
 func (fault *Fault) MarshalJSON() ([]byte, error) {
-	// The approach below copies the full object into a temporary object
-	// with discriminator and passes it to the go json mashaler.
-	// An alternative is to create small utility object that holds the
-	// discriminator and anonymous Fault pointer. This requires the
-	// serialization to be in custom interface and additional copy logic in
-	// higher level bindings. The current approach preserves the go abstractions
-	// and simplifies higher level bindings.
+	type marshalFault Fault
 	return json.Marshal(struct {
-		Message string
-		Cause   interfaces.Fault
-		Kind    string
+		marshalFault
+		Kind string
 	}{
-		Message: fault.Message,
-		Cause:   fault.Cause,
-		Kind:    "Fault",
+		marshalFault: marshalFault(*fault),
+		Kind:         "Fault",
 	})
 }
 
@@ -105,7 +97,10 @@ func DeserializeFault(in []byte) (interfaces.Fault, error) {
 	default: // Error on default or try to use base type?
 		res = &Fault{}
 	}
-	json.Unmarshal(in, res)
+	err = json.Unmarshal(in, res)
+	if err != nil {
+		return nil, err
+	}
 
 	return res, nil
 }
@@ -134,7 +129,7 @@ func (ff *FaultField) UnmarshalJSON(in []byte) error {
 	return err
 }
 
-// ToFaultsArray is utlity to convert FaultField Array to interfaces.Fault array
+// ToFaultsArray is utility to convert FaultField Array to interfaces.Fault array
 func ToFaultsArray(faults []FaultField) []interfaces.Fault {
 	var items []interfaces.Fault
 	for _, tmp := range faults {
