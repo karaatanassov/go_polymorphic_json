@@ -1,9 +1,6 @@
-// Code to be generated.
-// This is the only fully implemented binding type and includes:
-// 1. Data object - Fault
-// 2. Utility serialization object - FaultField
-// 3. Array conversion utilities to be used in other bindings
+// Code to be generated for a base type.
 
+// Package models contains the various data structures
 package models
 
 import (
@@ -54,14 +51,21 @@ func (fault *Fault) SetCause(cause interfaces.Fault) {
 func (fault *Fault) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 	}{}
 	err := json.Unmarshal(in, pxy)
 	if err != nil {
 		return err
 	}
+	var cause interfaces.Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	fault.Message = pxy.Message
-	fault.Cause = pxy.Cause.Fault
+	fault.Cause = cause
 	return nil
 }
 
@@ -113,37 +117,4 @@ func UnmarshalFault(in []byte) (interfaces.Fault, error) {
 	json.Unmarshal(in, res)
 
 	return res, nil
-}
-
-// FaultField is utility class that helps the go JSON deserializer to invoke the
-// proper de-serialization logic for Fault fields while preserving the
-// polymorphic nature of the type. go uses reflection to invoke the proper
-// de-serialization method. As interface do not have methods implementations
-// we need a concrete class field that will have the logic to deserialize the
-// proper interface implementation.
-// In bindings deserialization we need two types - one with *Field
-// and one for the interface type. UnmarshalJSON() reads into the the * Field
-// type and then copies the data to the type with interface type.
-// See field_test.go
-type FaultField struct {
-	interfaces.Fault
-}
-
-var _ interfaces.Fault = &FaultField{}
-var _ json.Unmarshaler = &FaultField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *FaultField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.Fault, err = UnmarshalFault(in)
-	return err
-}
-
-// ToFaultsArray is utlity to convert FaultField Array to interfaces.Fault array
-func ToFaultsArray(faults []FaultField) []interfaces.Fault {
-	var items []interfaces.Fault
-	for _, tmp := range faults {
-		items = append(items, tmp.Fault)
-	}
-	return items
 }

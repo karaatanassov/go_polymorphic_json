@@ -38,30 +38,22 @@ func (rf *RuntimeFault) MarshalJSON() ([]byte, error) {
 func (rf *RuntimeFault) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 	}{}
 	err := json.Unmarshal(in, pxy)
 	if err != nil {
 		return err
 	}
+	var cause interfaces.Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	rf.Message = pxy.Message
-	rf.Cause = pxy.Cause.Fault
+	rf.Cause = cause
 	return nil
-}
-
-// RuntimeFaultField type allows reading polymorphic RuntimeFault fields
-type RuntimeFaultField struct {
-	interfaces.RuntimeFault
-}
-
-var _ interfaces.Fault = &RuntimeFaultField{}
-var _ json.Unmarshaler = &RuntimeFaultField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *RuntimeFaultField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.RuntimeFault, err = UnmarshalRuntimeFault(in)
-	return err
 }
 
 // UnmarshalRuntimeFault reads RuntimeFault or it's subclasses from JSON bytes

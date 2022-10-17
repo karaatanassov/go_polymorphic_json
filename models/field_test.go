@@ -14,16 +14,21 @@ type Container struct {
 var _ json.Unmarshaler = &Container{}
 
 func (c *Container) UnmarshalJSON(in []byte) error {
-	// Deserialize into temp object of utility class
+	// Deserialize into temp object
 	temp := struct {
-		FaultField FaultField
+		FaultField json.RawMessage
 	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
 	}
-	// Re-assign all fields to the container unwrapping the util classes
-	c.FaultField = temp.FaultField.Fault
+	c.FaultField = nil
+	if temp.FaultField != nil {
+		c.FaultField, err = UnmarshalFault(temp.FaultField)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

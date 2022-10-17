@@ -270,46 +270,40 @@ Here is the [sample getting bigger](https://play.golang.org/p/6k2nFYd-dAN)
 The last challenge is reading interfaces when they are members of an object or
 an array.
 
-To achieve this each object that has field of polymorphic type will need custom unmarshaling logic that reads into a type whose fields are all struct types. Later it will convert into the proper type.
+To achieve this each object that has field of polymorphic type will need custom unmarshaling logic that reads into a type with placeholder fields that can be
+unmarshaled into temporary object and later converted into the proper type.
 
 For [example](models/field_test.go)
 
 ```go
-type Container struct {
-	FaultField interfaces.Fault
-}
-
 var _ json.Unmarshaler = &Container{}
 
 func (c *Container) UnmarshalJSON(in []byte) error {
-	// Deserialize into temp object of utility class
+	// Deserialize into temp object
 	temp := struct {
-		FaultField FaultField
+		FaultField json.RawMessage
 	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
 	}
-	// Re-assign all fields to the container unwrapping the util classes
-	c.FaultField = temp.FaultField.Fault
+	c.FaultField = nil
+	if temp.FaultField != nil {
+		c.FaultField, err = UnmarshalFault(temp.FaultField)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 ```
-Our goal in the code above is to unmarshal `Container` structure. To achieve it we first unmarshal into  spacial structure that has `FaultField` field instead of the `Fault` interface type. That `FaultField` in its unmarshal method will use the `UnmarshalFault` we introduced earlier:
+Our goal in the code above is to unmarshal `Container` structure. To achieve it
+we first unmarshal into  spacial structure that has `json.RawMessage` field
+instead of the `Fault` interface type. We use the `UnmarshalFault` function to
+convert the `json.RawMessage` to `Fault`,
 
-```go
-type FaultField struct {
-	interfaces.Fault
-}
-
-func (ff *FaultField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.Fault, err = UnmarshalFault(in)
-	return err
-}
-```
-
-In this way we can now easily read our `Container` object form a JSON file and get the correct `Fault` instance.
+In this way we can now easily read our `Container` object from a JSON file and
+get the correct `Fault` instance.
 
 ```go
 	c := Container{}
@@ -318,9 +312,11 @@ In this way we can now easily read our `Container` object form a JSON file and g
 
 ### Reading JSON arrays
 
-Working with arrays is similar to object fields. We will need to first fead into special slice of `FaultField` elements and then build the proper slice of `Fault` interface implementations.
+Working with arrays is similar to object fields. We need to first read into
+special slice of `json.RawMEssage` elements and then build the proper slice of
+`Fault` interface implementations.
 
-You ca see the code in [array_test.go](models/array_test.go)
+You can see the code in [array_test.go](models/array_test.go)
 
 ```go
 type ArrayContainer struct {
@@ -332,26 +328,27 @@ var _ json.Unmarshaler = &ArrayContainer{}
 func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class
 	temp := struct {
-		Faults []FaultField
+		Faults []json.RawMessage
 	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
 	}
-	// Re-assign all fields to the container unwrapping the util classes
-	c.Faults = ToFaultsArray(temp.Faults)
-	return nil
-}
-```
-To make this work we will need to add one more utility to our `Fault` implementation:
-
-```go
-func ToFaultsArray(faults []FaultField) []interfaces.Fault {
-	var items []interfaces.Fault
-	for _, tmp := range faults {
-		items = append(items, tmp.Fault)
+	c.Faults = nil
+	if temp.Faults != nil {
+		c.Faults = []interfaces.Fault{}
+		for _, rawFault := range temp.Faults {
+			if rawFault == nil {
+				c.Faults = append(c.Faults, nil)
+			}
+			fault, err := UnmarshalFault(rawFault)
+			if err != nil {
+				return err
+			}
+			c.Faults = append(c.Faults, fault)
+		}
 	}
-	return items
+	return nil
 }
 ```
 
@@ -363,7 +360,7 @@ The `Fault` object contains a `Cause` field that links to a related `Fault` obje
 func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 		ObjKind string
 		Obj     string
 	}{}
@@ -371,8 +368,15 @@ func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
+	var cause interfaces.Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	nfo.Message = pxy.Message
-	nfo.Cause = pxy.Cause.Fault
+	nfo.Cause = cause
 	nfo.Obj = pxy.Obj
 	nfo.ObjKind = pxy.ObjKind
 	return nil

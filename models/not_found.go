@@ -61,7 +61,7 @@ func (nfo *NotFound) MarshalJSON() ([]byte, error) {
 func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 		ObjKind string
 		Obj     string
 	}{}
@@ -69,26 +69,18 @@ func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
+	var cause interfaces.Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	nfo.Message = pxy.Message
-	nfo.Cause = pxy.Cause.Fault
+	nfo.Cause = cause
 	nfo.Obj = pxy.Obj
 	nfo.ObjKind = pxy.ObjKind
 	return nil
-}
-
-// NotFoundField type allows reading polymorphic RuntimeFault fields
-type NotFoundField struct {
-	interfaces.NotFound
-}
-
-var _ interfaces.Fault = &NotFoundField{}
-var _ json.Unmarshaler = &NotFoundField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *NotFoundField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.NotFound, err = UnmarshalNotFound(in)
-	return err
 }
 
 // UnmarshalNotFound reads NotFound or it's subclasses from JSON bytes
