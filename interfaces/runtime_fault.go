@@ -4,4 +4,6 @@ package interfaces
 // To be generated
 type RuntimeFault interface {
 	Fault
+	// ZzRuntimeFault disallows converting Fault struct to RuntimeFault interface
+	ZzRuntimeFault()
 }
