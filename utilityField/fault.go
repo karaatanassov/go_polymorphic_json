@@ -1,6 +1,7 @@
 // Code to be generated.
-// This is the only fully implemented binding type and includes:
-// 1. Data object - Fault
+// This is fully implemented binding type and includes:
+// 1. Interface - Fault
+// 2. Data object - FaultStruct
 // 2. Utility serialization object - FaultField
 // 3. Array conversion utilities to be used in other bindings
 

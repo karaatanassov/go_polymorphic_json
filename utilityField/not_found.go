@@ -66,7 +66,7 @@ func (nfo *NotFoundStruct) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON reads a fault from JSON
+// UnmarshalJSON reads a NotFound from JSON
 func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string

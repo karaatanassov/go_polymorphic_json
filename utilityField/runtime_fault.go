@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// RuntimeFault represents all runtime faults that can be thrown
+// RuntimeFault the descends from Fault and adds no new fields just semantics.
 // To be generated
 type RuntimeFault interface {
 	Fault
@@ -13,7 +13,7 @@ type RuntimeFault interface {
 	ZzRuntimeFault()
 }
 
-// RuntimeFaultStruct represents fault
+// RuntimeFaultStruct contains the RuntimeFault data
 type RuntimeFaultStruct struct {
 	FaultStruct
 }
@@ -40,7 +40,7 @@ func (rf *RuntimeFaultStruct) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON reads a fault from JSON
+// UnmarshalJSON reads a RuntimeFault from JSON
 func (rf *RuntimeFaultStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
@@ -70,7 +70,7 @@ func (ff *RuntimeFaultField) UnmarshalJSON(in []byte) error {
 	return err
 }
 
-// UnmarshalRuntimeFault reads RuntimeFault or it's subclasses from JSON bytes
+// UnmarshalRuntimeFault reads RuntimeFault and it's subclasses from JSON bytes
 func UnmarshalRuntimeFault(in []byte) (RuntimeFault, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
@@ -79,5 +79,5 @@ func UnmarshalRuntimeFault(in []byte) (RuntimeFault, error) {
 	if runtimeFault, ok := fault.(RuntimeFault); ok {
 		return runtimeFault, nil
 	}
-	return nil, fmt.Errorf("Cannot unmarshal RuntimeFault %v", fault)
+	return nil, fmt.Errorf("cannot unmarshal RuntimeFault %v", fault)
 }
