@@ -1,4 +1,4 @@
-package models
+package no_accessors
 
 import (
 	"encoding/json"
@@ -9,11 +9,7 @@ import (
 // To be generated
 type NotFound interface {
 	RuntimeFault
-	GetObjKind() string
-	SetObjKind(string)
-	GetObj() string
-	SetObj(string)
-	ZzNotFound()
+	GetNotFound() *NotFoundStruct
 }
 
 // NotFoundStruct contains the data about a not found error
@@ -29,29 +25,8 @@ var _ Fault = &NotFoundStruct{}
 var _ json.Marshaler = &NotFoundStruct{}
 var _ json.Unmarshaler = &NotFoundStruct{}
 
-// ZzNotFound is a marker to prevent converting struct with same fields into
-// NotFound interface
-func (nfo *NotFoundStruct) ZzNotFound() {
-}
-
-// GetObjKind retrieves the object kind of obj identifier
-func (nfo *NotFoundStruct) GetObjKind() string {
-	return nfo.ObjKind
-}
-
-// SetObjKind sets the kind of object references by obj
-func (nfo *NotFoundStruct) SetObjKind(objKind string) {
-	nfo.ObjKind = objKind
-}
-
-// GetObj retrieves the obj value
-func (nfo *NotFoundStruct) GetObj() string {
-	return nfo.Obj
-}
-
-// SetObj sets the obj id value
-func (nfo *NotFoundStruct) SetObj(obj string) {
-	nfo.Obj = obj
+func (f *NotFoundStruct) GetNotFound() *NotFoundStruct {
+	return f
 }
 
 // MarshalJSON writes a NotFoundObject as JSON
@@ -66,11 +41,11 @@ func (nfo *NotFoundStruct) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON reads a NotFound from JSON
+// UnmarshalJSON reads a fault from JSON
 func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 		ObjKind string
 		Obj     string
 	}{}
@@ -78,26 +53,18 @@ func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
+	var cause Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	nfo.Message = pxy.Message
-	nfo.Cause = pxy.Cause.Fault
+	nfo.Cause = cause
 	nfo.Obj = pxy.Obj
 	nfo.ObjKind = pxy.ObjKind
 	return nil
-}
-
-// NotFoundField type allows reading polymorphic RuntimeFault fields
-type NotFoundField struct {
-	NotFound
-}
-
-var _ Fault = &NotFoundField{}
-var _ json.Unmarshaler = &NotFoundField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *NotFoundField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.NotFound, err = UnmarshalNotFound(in)
-	return err
 }
 
 // UnmarshalNotFound reads NotFound or it's subclasses from JSON bytes

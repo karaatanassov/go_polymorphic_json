@@ -1,11 +1,7 @@
-// Code to be generated.
-// This is fully implemented binding type and includes:
-// 1. Interface - Fault
-// 2. Data object - FaultStruct
-// 2. Utility serialization object - FaultField
-// 3. Array conversion utilities to be used in other bindings
+// Code to be generated for a base type.
 
-package models
+// Package models contains the various data structures
+package raw_message
 
 import (
 	"encoding/json"
@@ -64,14 +60,21 @@ func (fault *FaultStruct) SetCause(cause Fault) {
 func (fault *FaultStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 	}{}
 	err := json.Unmarshal(in, pxy)
 	if err != nil {
 		return err
 	}
+	var cause Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	fault.Message = pxy.Message
-	fault.Cause = pxy.Cause.Fault
+	fault.Cause = cause
 	return nil
 }
 
@@ -120,43 +123,7 @@ func UnmarshalFault(in []byte) (Fault, error) {
 	default: // Error on default or try to use base type?
 		res = &FaultStruct{}
 	}
-	err = json.Unmarshal(in, res)
-	if err != nil {
-		return nil, err
-	}
+	json.Unmarshal(in, res)
 
 	return res, nil
-}
-
-// FaultField is utility class that helps the go JSON deserializer to invoke the
-// proper de-serialization logic for Fault fields while preserving the
-// polymorphic nature of the type. go uses reflection to invoke the proper
-// de-serialization method. As interface do not have methods implementations
-// we need a concrete class field that will have the logic to deserialize the
-// proper interface implementation.
-// In bindings deserialization we need two types - one with *Field
-// and one for the interface type. UnmarshalJSON() reads into the the * Field
-// type and then copies the data to the type with interface type.
-// See field_test.go
-type FaultField struct {
-	Fault
-}
-
-var _ Fault = &FaultField{}
-var _ json.Unmarshaler = &FaultField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *FaultField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.Fault, err = UnmarshalFault(in)
-	return err
-}
-
-// ToFaultsArray is utility to convert FaultField Array to Fault array
-func ToFaultsArray(faults []FaultField) []Fault {
-	var items []Fault
-	for _, tmp := range faults {
-		items = append(items, tmp.Fault)
-	}
-	return items
 }

@@ -1,4 +1,4 @@
-package models
+package raw_message
 
 import (
 	"encoding/json"
@@ -14,14 +14,26 @@ var _ json.Unmarshaler = &ArrayContainer{}
 func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	// Deserialize into temp object of utility class
 	temp := struct {
-		Faults []FaultField
+		Faults []json.RawMessage
 	}{}
 	err := json.Unmarshal(in, &temp)
 	if err != nil {
 		return err
 	}
-	// Re-assign all fields to the container unwrapping the util classes
-	c.Faults = ToFaultsArray(temp.Faults)
+	c.Faults = nil
+	if temp.Faults != nil {
+		c.Faults = []Fault{}
+		for _, rawFault := range temp.Faults {
+			if rawFault == nil {
+				c.Faults = append(c.Faults, nil)
+			}
+			fault, err := UnmarshalFault(rawFault)
+			if err != nil {
+				return err
+			}
+			c.Faults = append(c.Faults, fault)
+		}
+	}
 	return nil
 }
 

@@ -1,19 +1,18 @@
-package models
+package no_accessors
 
 import (
 	"encoding/json"
 	"fmt"
 )
 
-// RuntimeFault the descends from Fault and adds no new fields just semantics.
+// RuntimeFault represents all runtime faults that can be thrown
 // To be generated
 type RuntimeFault interface {
 	Fault
-	// ZzRuntimeFault disallows converting Fault struct to RuntimeFault interface
-	ZzRuntimeFault()
+	GetRuntimeFault() *RuntimeFaultStruct
 }
 
-// RuntimeFaultStruct contains the RuntimeFault data
+// RuntimeFaultStruct represents fault
 type RuntimeFaultStruct struct {
 	FaultStruct
 }
@@ -23,9 +22,8 @@ var _ RuntimeFault = &RuntimeFaultStruct{}
 var _ json.Marshaler = &RuntimeFaultStruct{}
 var _ json.Unmarshaler = &RuntimeFaultStruct{}
 
-// ZzRuntimeFault is a marker it prevents converting Fault struct to
-// RuntimeFault interface
-func (rf *RuntimeFaultStruct) ZzRuntimeFault() {
+func (f *RuntimeFaultStruct) GetRuntimeFault() *RuntimeFaultStruct {
+	return f
 }
 
 // MarshalJSON writes a RuntimeFaultObject as JSON
@@ -40,37 +38,29 @@ func (rf *RuntimeFaultStruct) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON reads a RuntimeFault from JSON
+// UnmarshalJSON reads a fault from JSON
 func (rf *RuntimeFaultStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
-		Cause   FaultField
+		Cause   json.RawMessage
 	}{}
 	err := json.Unmarshal(in, pxy)
 	if err != nil {
 		return err
 	}
+	var cause Fault
+	if pxy.Cause != nil {
+		cause, err = UnmarshalFault(pxy.Cause)
+		if err != nil {
+			return err
+		}
+	}
 	rf.Message = pxy.Message
-	rf.Cause = pxy.Cause.Fault
+	rf.Cause = cause
 	return nil
 }
 
-// RuntimeFaultField type allows reading polymorphic RuntimeFault fields
-type RuntimeFaultField struct {
-	RuntimeFault
-}
-
-var _ Fault = &RuntimeFaultField{}
-var _ json.Unmarshaler = &RuntimeFaultField{}
-
-// UnmarshalJSON reads the embedded fault taking care of the discriminator
-func (ff *RuntimeFaultField) UnmarshalJSON(in []byte) error {
-	var err error
-	ff.RuntimeFault, err = UnmarshalRuntimeFault(in)
-	return err
-}
-
-// UnmarshalRuntimeFault reads RuntimeFault and it's subclasses from JSON bytes
+// UnmarshalRuntimeFault reads RuntimeFault or it's subclasses from JSON bytes
 func UnmarshalRuntimeFault(in []byte) (RuntimeFault, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
