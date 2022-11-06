@@ -3,29 +3,27 @@ package models
 import (
 	"encoding/json"
 	"testing"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
-var innerFault = Fault{
+var innerFault = FaultStruct{
 	Message: "inner message",
 }
 
-var innerRuntimeFault = RuntimeFault{
-	Fault: innerFault,
+var innerRuntimeFault = RuntimeFaultStruct{
+	FaultStruct: innerFault,
 }
 
-var fault *Fault = &Fault{
+var fault *FaultStruct = &FaultStruct{
 	Message: "test message",
 	Cause:   &innerRuntimeFault,
 }
-var runtimeFault *RuntimeFault = &RuntimeFault{
-	Fault: *fault,
+var runtimeFault *RuntimeFaultStruct = &RuntimeFaultStruct{
+	FaultStruct: *fault,
 }
-var notFound *NotFound = &NotFound{
-	RuntimeFault: *runtimeFault,
-	ObjKind:      "VirtualMachine",
-	Obj:          "vm-42",
+var notFound *NotFoundStruct = &NotFoundStruct{
+	RuntimeFaultStruct: *runtimeFault,
+	ObjKind:            "VirtualMachine",
+	Obj:                "vm-42",
 }
 
 func TestFault(t *testing.T) {
@@ -83,12 +81,12 @@ func TestValidRuntimeFault(t *testing.T) {
 	if err != nil {
 		t.Error("Expected to unmarshal RuntimeFault.", err)
 	}
-	// Note that the validate method accepts interfaces.Fault and works well with
-	// interfaces.RuntimeFault which holds NotFound
+	// Note that the validate method accepts Fault and works well with
+	// RuntimeFault which holds NotFound
 	validateNotFound(rtf, t)
 }
 
-func serializeDeserialize(s interface{}, t *testing.T) (interfaces.Fault, error) {
+func serializeDeserialize(s interface{}, t *testing.T) (Fault, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		t.Error("Serialization failed", err)
@@ -105,9 +103,9 @@ func serializeDeserialize(s interface{}, t *testing.T) (interfaces.Fault, error)
 	return fault, nil
 }
 
-func validateFault(fault interfaces.Fault, t *testing.T) {
+func validateFault(fault Fault, t *testing.T) {
 	switch v := fault.(type) {
-	case *Fault:
+	case *FaultStruct:
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
@@ -117,9 +115,9 @@ func validateFault(fault interfaces.Fault, t *testing.T) {
 	}
 }
 
-func validateRuntimeFault(fault interfaces.Fault, t *testing.T) {
+func validateRuntimeFault(fault Fault, t *testing.T) {
 	switch v := fault.(type) {
-	case *RuntimeFault:
+	case *RuntimeFaultStruct:
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
@@ -129,12 +127,12 @@ func validateRuntimeFault(fault interfaces.Fault, t *testing.T) {
 	}
 }
 
-func validateNotFound(fault interfaces.Fault, t *testing.T) {
+func validateNotFound(fault Fault, t *testing.T) {
 	if fault.GetMessage() != "test message" {
 		t.Error("Unexpected message:", fault.GetMessage())
 	}
 
-	if notFound, ok := fault.(interfaces.NotFound); ok {
+	if notFound, ok := fault.(NotFound); ok {
 		if notFound.GetObjKind() != "VirtualMachine" {
 			t.Error("Unexpected obj kind:", notFound.GetObjKind())
 		}
@@ -148,12 +146,12 @@ func validateNotFound(fault interfaces.Fault, t *testing.T) {
 	}
 }
 
-func validateCause(cause interfaces.Fault, t *testing.T) {
+func validateCause(cause Fault, t *testing.T) {
 	if cause == nil {
 		t.Error("Missing cause")
 	} else {
 		switch i := cause.(type) {
-		case *RuntimeFault:
+		case *RuntimeFaultStruct:
 			if i.Message != "inner message" {
 				t.Error("Inner message is wrong:", i.Message)
 			}

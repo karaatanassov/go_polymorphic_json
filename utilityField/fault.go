@@ -8,50 +8,59 @@ package models
 
 import (
 	"encoding/json"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
-// Fault contains information about a base fault
-// To be generated. This is actual data class. It implements the interface.Fault
-// and the JSONSerializable
-type Fault struct {
-	Message string
-	Cause   interfaces.Fault
+// Fault represents a base error
+// This should be generated code. It is possible to emit it in the models
+// package and creative name will be needed e.g. NotFoundInterface.
+// The interface package approach seems cleaner.
+type Fault interface {
+	GetMessage() string
+	SetMessage(string)
+	GetCause() Fault
+	SetCause(Fault)
 }
 
-var _ interfaces.Fault = &Fault{}
-var _ json.Marshaler = &Fault{}
-var _ json.Unmarshaler = &Fault{}
+// FaultStruct contains information about a base fault
+// To be generated. This is actual data class. It implements the interface.FaultStruct
+// and the JSONSerializable
+type FaultStruct struct {
+	Message string
+	Cause   Fault
+}
+
+var _ Fault = &FaultStruct{}
+var _ json.Marshaler = &FaultStruct{}
+var _ json.Unmarshaler = &FaultStruct{}
 
 // This assignment is not allowed with ZzRuntimeFault
-//var _ interfaces.RuntimeFault = &Fault{}
+//var _ RuntimeFault = &Fault{}
 
 // This assignment is not allowed
-//var _ interfaces.NotFound = &Fault{}
+//var _ NotFound = &Fault{}
 
 // GetMessage retrieves the message value
-func (fault *Fault) GetMessage() string {
+func (fault *FaultStruct) GetMessage() string {
 	return fault.Message
 }
 
 // SetMessage updates the message value
-func (fault *Fault) SetMessage(message string) {
+func (fault *FaultStruct) SetMessage(message string) {
 	fault.Message = message
 }
 
 // GetCause returns the case of fault
-func (fault *Fault) GetCause() interfaces.Fault {
+func (fault *FaultStruct) GetCause() Fault {
 	return fault.Cause
 }
 
 // SetCause sets the cause of the fault
-func (fault *Fault) SetCause(cause interfaces.Fault) {
+func (fault *FaultStruct) SetCause(cause Fault) {
 	fault.Cause = cause
 }
 
 // UnmarshalJSON reads a fault from JSON
-func (fault *Fault) UnmarshalJSON(in []byte) error {
+func (fault *FaultStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
 		Cause   FaultField
@@ -66,8 +75,8 @@ func (fault *Fault) UnmarshalJSON(in []byte) error {
 }
 
 // MarshalJSON writes Fault as JSON and adds discriminator
-func (fault *Fault) MarshalJSON() ([]byte, error) {
-	type marshalable Fault
+func (fault *FaultStruct) MarshalJSON() ([]byte, error) {
+	type marshalable FaultStruct
 	// The approach below copies the full object into a temporary object
 	// with discriminator and passes it to the go json mashaler.
 	// An alternative is to create small utility object that holds the
@@ -87,7 +96,7 @@ func (fault *Fault) MarshalJSON() ([]byte, error) {
 // UnmarshalFault reads a fault from JSON and instantiates the proper type
 // based on the Kind field. It deserializes the value twice. First scan for
 // discriminator and then deserializes into the proper type.
-func UnmarshalFault(in []byte) (interfaces.Fault, error) {
+func UnmarshalFault(in []byte) (Fault, error) {
 	d := &struct {
 		Kind string
 	}{}
@@ -101,14 +110,14 @@ func UnmarshalFault(in []byte) (interfaces.Fault, error) {
 	}
 	kind := d.Kind
 
-	var res interfaces.Fault
+	var res Fault
 	switch kind {
 	case "NotFound":
-		res = &NotFound{}
+		res = &NotFoundStruct{}
 	case "RuntimeFault":
-		res = &RuntimeFault{}
+		res = &RuntimeFaultStruct{}
 	default: // Error on default or try to use base type?
-		res = &Fault{}
+		res = &FaultStruct{}
 	}
 	err = json.Unmarshal(in, res)
 	if err != nil {
@@ -129,10 +138,10 @@ func UnmarshalFault(in []byte) (interfaces.Fault, error) {
 // type and then copies the data to the type with interface type.
 // See field_test.go
 type FaultField struct {
-	interfaces.Fault
+	Fault
 }
 
-var _ interfaces.Fault = &FaultField{}
+var _ Fault = &FaultField{}
 var _ json.Unmarshaler = &FaultField{}
 
 // UnmarshalJSON reads the embedded fault taking care of the discriminator
@@ -142,9 +151,9 @@ func (ff *FaultField) UnmarshalJSON(in []byte) error {
 	return err
 }
 
-// ToFaultsArray is utility to convert FaultField Array to interfaces.Fault array
-func ToFaultsArray(faults []FaultField) []interfaces.Fault {
-	var items []interfaces.Fault
+// ToFaultsArray is utility to convert FaultField Array to Fault array
+func ToFaultsArray(faults []FaultField) []Fault {
+	var items []Fault
 	for _, tmp := range faults {
 		items = append(items, tmp.Fault)
 	}

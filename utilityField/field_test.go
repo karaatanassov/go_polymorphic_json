@@ -3,12 +3,10 @@ package models
 import (
 	"encoding/json"
 	"testing"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
 type Container struct {
-	FaultField interfaces.Fault
+	FaultField Fault
 }
 
 var _ json.Unmarshaler = &Container{}

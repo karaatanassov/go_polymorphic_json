@@ -3,51 +3,60 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
-// NotFound contains the data about a not found error
-type NotFound struct {
+// NotFound represents error when object is not found
+// To be generated
+type NotFound interface {
 	RuntimeFault
+	GetObjKind() string
+	SetObjKind(string)
+	GetObj() string
+	SetObj(string)
+	ZzNotFound()
+}
+
+// NotFoundStruct contains the data about a not found error
+type NotFoundStruct struct {
+	RuntimeFaultStruct
 	ObjKind string
 	Obj     string
 }
 
-var _ interfaces.NotFound = &NotFound{}
-var _ interfaces.RuntimeFault = &NotFound{}
-var _ interfaces.Fault = &NotFound{}
-var _ json.Marshaler = &NotFound{}
-var _ json.Unmarshaler = &NotFound{}
+var _ NotFound = &NotFoundStruct{}
+var _ RuntimeFault = &NotFoundStruct{}
+var _ Fault = &NotFoundStruct{}
+var _ json.Marshaler = &NotFoundStruct{}
+var _ json.Unmarshaler = &NotFoundStruct{}
 
 // ZzNotFound is a marker to prevent converting struct with same fields into
 // NotFound interface
-func (nfo *NotFound) ZzNotFound() {
+func (nfo *NotFoundStruct) ZzNotFound() {
 }
 
 // GetObjKind retrieves the object kind of obj identifier
-func (nfo *NotFound) GetObjKind() string {
+func (nfo *NotFoundStruct) GetObjKind() string {
 	return nfo.ObjKind
 }
 
 // SetObjKind sets the kind of object references by obj
-func (nfo *NotFound) SetObjKind(objKind string) {
+func (nfo *NotFoundStruct) SetObjKind(objKind string) {
 	nfo.ObjKind = objKind
 }
 
 // GetObj retrieves the obj value
-func (nfo *NotFound) GetObj() string {
+func (nfo *NotFoundStruct) GetObj() string {
 	return nfo.Obj
 }
 
 // SetObj sets the obj id value
-func (nfo *NotFound) SetObj(obj string) {
+func (nfo *NotFoundStruct) SetObj(obj string) {
 	nfo.Obj = obj
 }
 
 // MarshalJSON writes a NotFoundObject as JSON
-func (nfo *NotFound) MarshalJSON() ([]byte, error) {
-	type marshalable NotFound
+func (nfo *NotFoundStruct) MarshalJSON() ([]byte, error) {
+	type marshalable NotFoundStruct
 	return json.Marshal(struct {
 		Kind string
 		marshalable
@@ -58,7 +67,7 @@ func (nfo *NotFound) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON reads a fault from JSON
-func (nfo *NotFound) UnmarshalJSON(in []byte) error {
+func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
 		Cause   FaultField
@@ -78,10 +87,10 @@ func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 
 // NotFoundField type allows reading polymorphic RuntimeFault fields
 type NotFoundField struct {
-	interfaces.NotFound
+	NotFound
 }
 
-var _ interfaces.Fault = &NotFoundField{}
+var _ Fault = &NotFoundField{}
 var _ json.Unmarshaler = &NotFoundField{}
 
 // UnmarshalJSON reads the embedded fault taking care of the discriminator
@@ -92,13 +101,13 @@ func (ff *NotFoundField) UnmarshalJSON(in []byte) error {
 }
 
 // UnmarshalNotFound reads NotFound or it's subclasses from JSON bytes
-func UnmarshalNotFound(in []byte) (interfaces.NotFound, error) {
+func UnmarshalNotFound(in []byte) (NotFound, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
 		return nil, err
 	}
-	if notFound, ok := fault.(interfaces.NotFound); ok {
+	if notFound, ok := fault.(NotFound); ok {
 		return notFound, nil
 	}
-	return nil, fmt.Errorf("Cannot unmarshal NotFound %v", fault)
+	return nil, fmt.Errorf("cannot unmarshal NotFound %v", fault)
 }

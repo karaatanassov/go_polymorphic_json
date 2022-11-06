@@ -3,12 +3,10 @@ package models
 import (
 	"encoding/json"
 	"testing"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
 type ArrayContainer struct {
-	Faults []interfaces.Fault
+	Faults []Fault
 }
 
 var _ json.Unmarshaler = &ArrayContainer{}
@@ -28,7 +26,7 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 }
 
 var arrayContainer = ArrayContainer{
-	Faults: []interfaces.Fault{
+	Faults: []Fault{
 		fault,
 		runtimeFault,
 		notFound,

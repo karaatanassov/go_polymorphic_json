@@ -227,7 +227,7 @@ We need a function that receives a `[]byte` and returns `interface.Fault`. Let
 us call this `UnmarshalFault`:
 
 ```go
-func UnmarshalFault(in []byte) (interfaces.Fault, error) {
+func UnmarshalFault(in []byte) (Fault, error) {
 	d := &struct {
 		Kind string
 	}{}
@@ -241,7 +241,7 @@ func UnmarshalFault(in []byte) (interfaces.Fault, error) {
 	}
 	kind := d.Kind
 
-	var res interfaces.Fault
+	var res Fault
 	switch kind {
 	case "NotFound":
 		res = &NotFound{}
@@ -276,7 +276,7 @@ For [example](models/field_test.go)
 
 ```go
 type Container struct {
-	FaultField interfaces.Fault
+	FaultField Fault
 }
 
 var _ json.Unmarshaler = &Container{}
@@ -299,7 +299,7 @@ Our goal in the code above is to unmarshal `Container` structure. To achieve it 
 
 ```go
 type FaultField struct {
-	interfaces.Fault
+	Fault
 }
 
 func (ff *FaultField) UnmarshalJSON(in []byte) error {
@@ -324,7 +324,7 @@ You ca see the code in [array_test.go](models/array_test.go)
 
 ```go
 type ArrayContainer struct {
-	Faults []interfaces.Fault
+	Faults []Fault
 }
 
 var _ json.Unmarshaler = &ArrayContainer{}
@@ -346,8 +346,8 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 To make this work we will need to add one more utility to our `Fault` implementation:
 
 ```go
-func ToFaultsArray(faults []FaultField) []interfaces.Fault {
-	var items []interfaces.Fault
+func ToFaultsArray(faults []FaultField) []Fault {
+	var items []Fault
 	for _, tmp := range faults {
 		items = append(items, tmp.Fault)
 	}
@@ -399,12 +399,12 @@ func (rf *RuntimeFault) ZzRuntimeFault() {
  `RuntimeFault` fields are polymorphic and are not root of a hierarchy. One option is to have `UnmarshalRuntimeFault` bank on the root objects like `Fault` and invoke `UnmarshalFault` function.  This will save code size as in a large hierarchy the unmashal methods may become too big.
 
 ```go
- func UnmarshalRuntimeFault(in []byte) (interfaces.RuntimeFault, error) {
+ func UnmarshalRuntimeFault(in []byte) (RuntimeFault, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
 		return nil, err
 	}
-	if runtimeFault, ok := fault.(interfaces.RuntimeFault); ok {
+	if runtimeFault, ok := fault.(RuntimeFault); ok {
 		return runtimeFault, nil
 	}
 	return nil, fmt.Errorf("Cannot unmarshal RuntimeFault %v", fault)

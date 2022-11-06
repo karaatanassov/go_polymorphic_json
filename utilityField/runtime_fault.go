@@ -3,28 +3,34 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/karaatanassov/go_polymorphic_json/interfaces"
 )
 
-// RuntimeFault represents fault
-type RuntimeFault struct {
+// RuntimeFault represents all runtime faults that can be thrown
+// To be generated
+type RuntimeFault interface {
 	Fault
+	// ZzRuntimeFault disallows converting Fault struct to RuntimeFault interface
+	ZzRuntimeFault()
 }
 
-var _ interfaces.Fault = &RuntimeFault{}
-var _ interfaces.RuntimeFault = &RuntimeFault{}
-var _ json.Marshaler = &RuntimeFault{}
-var _ json.Unmarshaler = &RuntimeFault{}
+// RuntimeFaultStruct represents fault
+type RuntimeFaultStruct struct {
+	FaultStruct
+}
+
+var _ Fault = &RuntimeFaultStruct{}
+var _ RuntimeFault = &RuntimeFaultStruct{}
+var _ json.Marshaler = &RuntimeFaultStruct{}
+var _ json.Unmarshaler = &RuntimeFaultStruct{}
 
 // ZzRuntimeFault is a marker it prevents converting Fault struct to
 // RuntimeFault interface
-func (rf *RuntimeFault) ZzRuntimeFault() {
+func (rf *RuntimeFaultStruct) ZzRuntimeFault() {
 }
 
 // MarshalJSON writes a RuntimeFaultObject as JSON
-func (rf *RuntimeFault) MarshalJSON() ([]byte, error) {
-	type marshalable RuntimeFault
+func (rf *RuntimeFaultStruct) MarshalJSON() ([]byte, error) {
+	type marshalable RuntimeFaultStruct
 	return json.Marshal(struct {
 		Kind string
 		marshalable
@@ -35,7 +41,7 @@ func (rf *RuntimeFault) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON reads a fault from JSON
-func (rf *RuntimeFault) UnmarshalJSON(in []byte) error {
+func (rf *RuntimeFaultStruct) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
 		Cause   FaultField
@@ -51,10 +57,10 @@ func (rf *RuntimeFault) UnmarshalJSON(in []byte) error {
 
 // RuntimeFaultField type allows reading polymorphic RuntimeFault fields
 type RuntimeFaultField struct {
-	interfaces.RuntimeFault
+	RuntimeFault
 }
 
-var _ interfaces.Fault = &RuntimeFaultField{}
+var _ Fault = &RuntimeFaultField{}
 var _ json.Unmarshaler = &RuntimeFaultField{}
 
 // UnmarshalJSON reads the embedded fault taking care of the discriminator
@@ -65,12 +71,12 @@ func (ff *RuntimeFaultField) UnmarshalJSON(in []byte) error {
 }
 
 // UnmarshalRuntimeFault reads RuntimeFault or it's subclasses from JSON bytes
-func UnmarshalRuntimeFault(in []byte) (interfaces.RuntimeFault, error) {
+func UnmarshalRuntimeFault(in []byte) (RuntimeFault, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
 		return nil, err
 	}
-	if runtimeFault, ok := fault.(interfaces.RuntimeFault); ok {
+	if runtimeFault, ok := fault.(RuntimeFault); ok {
 		return runtimeFault, nil
 	}
 	return nil, fmt.Errorf("Cannot unmarshal RuntimeFault %v", fault)
