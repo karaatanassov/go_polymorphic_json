@@ -1,14 +1,14 @@
 # Polymorphic JSON with Go
 
-In this article and example project we look at the problem of handling
-polymorphic JSON structures in the Golang programming language.
+In this article and examples we look at the problem of handling polymorphic
+JSON structures in the Golang programming language.
 
-How to deal with polymorphic serialized JSON data is a common problem discussed
-in the Go community. This can be found in many existing APIs and is sometimes
-needed for new APIs. Unfortunately the default Go JSON code does not handle
+Deal with polymorphic serialized JSON data is a problem discussed in the Go
+community. Polymorhpisn can be found in existing APIs and is sometimes needed
+for new APIs. Unfortunately the default Go JSON code does not handle
 polymorphism out of the box and hence the motivation for this work.
 
-First we need to understand what is polymorphism and how it maps to Go language.
+Let us first understand what polymorphism is and how it maps to Go language.
 
 As per Wikipedia [Polymorphism](https://en.wikipedia.org/wiki/Polymorphism_(computer_science))
 is
@@ -70,14 +70,14 @@ common chore for API authors and consumers.
 The first task is to define the data objects in Go. This is rather
 straightforward job:
 ```go
-type Fault struct {
+type FaultStruct struct {
 	Message string
 	Cause   *Fault
 }
-type RuntimeFault struct {
+type RuntimeFaultStruct struct {
 	Fault
 }
-type NotFound struct {
+type NotFoundStruct struct {
 	RuntimeFault
 	ObjKind string
 	Obj     string
@@ -104,7 +104,16 @@ Let's see how to solve this.
 
 The Go language provides us with the concept of [interfaces](https://golang.org/doc/effective_go#interfaces})
 implemented through methods on various types. It is with interfaces that
-different data structures can exhibit polymorphic behavior.
+different data structures can be used interchangably and exhibit polymorphic
+behavior.
+
+We can apply interfaces in several ways to our example to get the desired
+polymorphic behavour. The first way we look at involves getters and setters.
+This is simpler to understand while not idiomatic for Go. The second apporach
+defines interfaces that provide access to the underlying data structure. It is
+not as obvious yet produces cleaner and more concise go code.
+
+### Using Interfaces with Accessors
 
 Applying interfaces to our example above produces [working code](https://play.golang.org/p/UckCCDz4wYT)
 ```go
@@ -157,6 +166,10 @@ Of course we will need to implement the methods in the `models` package at
 least once on the most generic type they appear on. We could also implement some
 methods more than once on more specific types if there is specific business
 logic to include at that level of abstraction.
+
+### No Accessors
+
+
 
 ## Rendering JSON
 

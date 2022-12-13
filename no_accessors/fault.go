@@ -29,7 +29,7 @@ var _ Fault = &FaultStruct{}
 var _ json.Marshaler = &FaultStruct{}
 var _ json.Unmarshaler = &FaultStruct{}
 
-// This assignment is not allowed with ZzRuntimeFault
+// This assignment is not allowed
 //var _ RuntimeFault = &Fault{}
 
 // This assignment is not allowed
