@@ -6,7 +6,7 @@ import (
 )
 
 type ArrayContainer struct {
-	Faults []Fault
+	Faults []BaseFault
 }
 
 var _ json.Unmarshaler = &ArrayContainer{}
@@ -22,7 +22,7 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 	}
 	c.Faults = nil
 	if temp.Faults != nil {
-		c.Faults = []Fault{}
+		c.Faults = []BaseFault{}
 		for _, rawFault := range temp.Faults {
 			if rawFault == nil {
 				c.Faults = append(c.Faults, nil)
@@ -38,7 +38,7 @@ func (c *ArrayContainer) UnmarshalJSON(in []byte) error {
 }
 
 var arrayContainer = ArrayContainer{
-	Faults: []Fault{
+	Faults: []BaseFault{
 		fault,
 		runtimeFault,
 		notFound,

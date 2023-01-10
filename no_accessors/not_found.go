@@ -3,35 +3,40 @@ package no_accessors
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
-// NotFound represents error when object is not found
+// BaseNotFound represents error when object is not found
 // To be generated
-type NotFound interface {
-	RuntimeFault
-	GetNotFound() *NotFoundStruct
+type BaseNotFound interface {
+	BaseRuntimeFault
+	GetNotFound() *NotFound
 }
 
-// NotFoundStruct contains the data about a not found error
-type NotFoundStruct struct {
-	RuntimeFaultStruct
+// NotFound contains the data about a not found error
+type NotFound struct {
+	RuntimeFault
 	ObjKind string
 	Obj     string
 }
 
-var _ NotFound = &NotFoundStruct{}
-var _ RuntimeFault = &NotFoundStruct{}
-var _ Fault = &NotFoundStruct{}
-var _ json.Marshaler = &NotFoundStruct{}
-var _ json.Unmarshaler = &NotFoundStruct{}
+func init() {
+	t["NotFound"] = reflect.TypeOf((*NotFound)(nil)).Elem()
+}
 
-func (f *NotFoundStruct) GetNotFound() *NotFoundStruct {
+var _ BaseNotFound = &NotFound{}
+var _ BaseRuntimeFault = &NotFound{}
+var _ BaseFault = &NotFound{}
+var _ json.Marshaler = &NotFound{}
+var _ json.Unmarshaler = &NotFound{}
+
+func (f *NotFound) GetNotFound() *NotFound {
 	return f
 }
 
 // MarshalJSON writes a NotFoundObject as JSON
-func (nfo *NotFoundStruct) MarshalJSON() ([]byte, error) {
-	type marshalable NotFoundStruct
+func (nfo *NotFound) MarshalJSON() ([]byte, error) {
+	type marshalable NotFound
 	return json.Marshal(struct {
 		Kind string
 		marshalable
@@ -42,7 +47,7 @@ func (nfo *NotFoundStruct) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON reads a fault from JSON
-func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
+func (nfo *NotFound) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
 		Cause   json.RawMessage
@@ -53,7 +58,7 @@ func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
-	var cause Fault
+	var cause BaseFault
 	if pxy.Cause != nil {
 		cause, err = UnmarshalFault(pxy.Cause)
 		if err != nil {
@@ -68,12 +73,12 @@ func (nfo *NotFoundStruct) UnmarshalJSON(in []byte) error {
 }
 
 // UnmarshalNotFound reads NotFound or it's subclasses from JSON bytes
-func UnmarshalNotFound(in []byte) (NotFound, error) {
+func UnmarshalNotFound(in []byte) (BaseNotFound, error) {
 	fault, err := UnmarshalFault(in)
 	if err != nil {
 		return nil, err
 	}
-	if notFound, ok := fault.(NotFound); ok {
+	if notFound, ok := fault.(BaseNotFound); ok {
 		return notFound, nil
 	}
 	return nil, fmt.Errorf("cannot unmarshal NotFound %v", fault)

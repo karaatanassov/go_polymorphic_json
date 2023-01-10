@@ -5,25 +5,25 @@ import (
 	"testing"
 )
 
-var innerFault = FaultStruct{
+var innerFault = Fault{
 	Message: "inner message",
 }
 
-var innerRuntimeFault = RuntimeFaultStruct{
-	FaultStruct: innerFault,
+var innerRuntimeFault = RuntimeFault{
+	Fault: innerFault,
 }
 
-var fault *FaultStruct = &FaultStruct{
+var fault *Fault = &Fault{
 	Message: "test message",
 	Cause:   &innerRuntimeFault,
 }
-var runtimeFault *RuntimeFaultStruct = &RuntimeFaultStruct{
-	FaultStruct: *fault,
+var runtimeFault *RuntimeFault = &RuntimeFault{
+	Fault: *fault,
 }
-var notFound *NotFoundStruct = &NotFoundStruct{
-	RuntimeFaultStruct: *runtimeFault,
-	ObjKind:            "VirtualMachine",
-	Obj:                "vm-42",
+var notFound *NotFound = &NotFound{
+	RuntimeFault: *runtimeFault,
+	ObjKind:      "VirtualMachine",
+	Obj:          "vm-42",
 }
 
 func TestFault(t *testing.T) {
@@ -86,7 +86,7 @@ func TestValidRuntimeFault(t *testing.T) {
 	validateNotFound(rtf, t)
 }
 
-func serializeDeserialize(s interface{}, t *testing.T) (Fault, error) {
+func serializeDeserialize(s interface{}, t *testing.T) (BaseFault, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		t.Error("Serialization failed", err)
@@ -103,9 +103,9 @@ func serializeDeserialize(s interface{}, t *testing.T) (Fault, error) {
 	return fault, nil
 }
 
-func validateFault(fault Fault, t *testing.T) {
+func validateFault(fault BaseFault, t *testing.T) {
 	switch v := fault.(type) {
-	case *FaultStruct:
+	case *Fault:
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
@@ -115,9 +115,9 @@ func validateFault(fault Fault, t *testing.T) {
 	}
 }
 
-func validateRuntimeFault(fault Fault, t *testing.T) {
+func validateRuntimeFault(fault BaseFault, t *testing.T) {
 	switch v := fault.(type) {
-	case *RuntimeFaultStruct:
+	case *RuntimeFault:
 		if v.Message != "test message" {
 			t.Error("Unexpected message:", v.Message)
 		}
@@ -127,8 +127,8 @@ func validateRuntimeFault(fault Fault, t *testing.T) {
 	}
 }
 
-func validateNotFound(fault Fault, t *testing.T) {
-	if notFound, ok := fault.(NotFound); ok {
+func validateNotFound(fault BaseFault, t *testing.T) {
+	if notFound, ok := fault.(BaseNotFound); ok {
 		nf := notFound.GetNotFound()
 		if nf.Message != "test message" {
 			t.Error("Unexpected message:", nf.Message)
@@ -146,12 +146,12 @@ func validateNotFound(fault Fault, t *testing.T) {
 	}
 }
 
-func validateCause(cause Fault, t *testing.T) {
+func validateCause(cause BaseFault, t *testing.T) {
 	if cause == nil {
 		t.Error("Missing cause")
 	} else {
 		switch i := cause.(type) {
-		case *RuntimeFaultStruct:
+		case *RuntimeFault:
 			if i.Message != "inner message" {
 				t.Error("Inner message is wrong:", i.Message)
 			}

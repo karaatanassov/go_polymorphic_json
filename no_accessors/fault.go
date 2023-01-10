@@ -8,39 +8,43 @@ package no_accessors
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
 )
 
-// Fault is implemented by Error struct and included in RuntimeFault and
+// BaseFault is implemented by Error struct and included in RuntimeFault and
 // NotFound. Thus one can upcast.
 // This should be generated code.
-type Fault interface {
-	GetFault() *FaultStruct
+type BaseFault interface {
+	GetFault() *Fault
 }
 
-// FaultStruct contains information about a base fault
-// To be generated. This is actual data class. It implements the interface.FaultStruct
+// Fault contains information about a base fault
+// To be generated. This is actual data class. It implements the interface.Fault
 // and the JSONSerializable
-type FaultStruct struct {
+type Fault struct {
 	Message string
-	Cause   Fault
+	Cause   BaseFault
 }
 
-var _ Fault = &FaultStruct{}
-var _ json.Marshaler = &FaultStruct{}
-var _ json.Unmarshaler = &FaultStruct{}
+func init() {
+	t["Fault"] = reflect.TypeOf((*Fault)(nil)).Elem()
+}
 
-// This assignment is not allowed
+var _ BaseFault = &Fault{}
+var _ json.Marshaler = &Fault{}
+var _ json.Unmarshaler = &Fault{}
+
+// These assignments are not allowed
 //var _ RuntimeFault = &Fault{}
-
-// This assignment is not allowed
 //var _ NotFound = &Fault{}
 
-func (f *FaultStruct) GetFault() *FaultStruct {
+func (f *Fault) GetFault() *Fault {
 	return f
 }
 
 // UnmarshalJSON reads a fault from JSON
-func (fault *FaultStruct) UnmarshalJSON(in []byte) error {
+func (fault *Fault) UnmarshalJSON(in []byte) error {
 	pxy := &struct {
 		Message string
 		Cause   json.RawMessage
@@ -49,7 +53,7 @@ func (fault *FaultStruct) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
-	var cause Fault
+	var cause BaseFault
 	if pxy.Cause != nil {
 		cause, err = UnmarshalFault(pxy.Cause)
 		if err != nil {
@@ -62,8 +66,8 @@ func (fault *FaultStruct) UnmarshalJSON(in []byte) error {
 }
 
 // MarshalJSON writes Fault as JSON and adds discriminator
-func (fault *FaultStruct) MarshalJSON() ([]byte, error) {
-	type marshalable FaultStruct
+func (fault *Fault) MarshalJSON() ([]byte, error) {
+	type marshalable Fault
 	// The approach below copies the full object into a temporary object
 	// with discriminator and passes it to the go json mashaler.
 	// An alternative is to create small utility object that holds the
@@ -83,7 +87,7 @@ func (fault *FaultStruct) MarshalJSON() ([]byte, error) {
 // UnmarshalFault reads a fault from JSON and instantiates the proper type
 // based on the Kind field. It deserializes the value twice. First scan for
 // discriminator and then deserializes into the proper type.
-func UnmarshalFault(in []byte) (Fault, error) {
+func UnmarshalFault(in []byte) (BaseFault, error) {
 	d := &struct {
 		Kind string
 	}{}
@@ -97,15 +101,17 @@ func UnmarshalFault(in []byte) (Fault, error) {
 	}
 	kind := d.Kind
 
-	var res Fault
-	switch kind {
-	case "NotFound":
-		res = &NotFoundStruct{}
-	case "RuntimeFault":
-		res = &RuntimeFaultStruct{}
-	default: // Error on default or try to use base type?
-		res = &FaultStruct{}
+	reflectType, ok := t[kind]
+	if !ok {
+		return nil, fmt.Errorf("unknown type %v", kind)
 	}
+
+	var res BaseFault
+	tv := reflect.New(reflectType)
+	if res, ok = tv.Interface().(BaseFault); !ok {
+		panic("A type in the registry does not implement Fault")
+	}
+
 	err = json.Unmarshal(in, res)
 	if err != nil {
 		return nil, err

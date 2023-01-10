@@ -6,7 +6,7 @@ import (
 )
 
 type Container struct {
-	FaultField Fault
+	FaultField BaseFault
 }
 
 var _ json.Unmarshaler = &Container{}
@@ -20,7 +20,7 @@ func (c *Container) UnmarshalJSON(in []byte) error {
 	if err != nil {
 		return err
 	}
-	var faultField Fault
+	var faultField BaseFault
 	if temp.FaultField != nil {
 		faultField, err = UnmarshalFault(temp.FaultField)
 		if err != nil {
